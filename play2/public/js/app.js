@@ -14,8 +14,10 @@ HaBlog.ready = function(){
 /******************************************************/
 
 HaBlog.CONSTANTS = {
-    PATH_CONTEXT : 'http://tech.piyush.purang.net',
-    PATH_BLOG_LIST : '/blog'
+    PATH_CONTEXT : 'http://tech.piyush.purang.net/ppurang/blog',
+    PATH_BLOG_LIST : '/_search',
+    PATH_SEARCH : '/_search?q=title.content:*&sort=created.time:desc&pretty',
+    PATH_EDIT: '/edit'
 };
 
 HaBlog.Utilities = {
@@ -31,9 +33,12 @@ HaBlog.GetItemsFromServer = function () {
         success: function(data) {
             // Use map to iterate through the items and create a new JSON object for
             // each item
-            data.map(function(item) {
 
-                var post = HaBlog.CreatePostFromJSon(item);
+            //TODO: MAKE SAFE
+            var results = data.hits.hits;
+            results.map(function(item) {
+
+                var post = HaBlog.CreatePostFromJSon(item._source);
 
                 HaBlog.postListController.addPost(post);
             });
@@ -43,10 +48,9 @@ HaBlog.GetItemsFromServer = function () {
 }
 
 HaBlog.CreatePostFromJSon = function (item){
-    //console.log(item);
+
 
     var post = HaBlog.Post.create();
-
     post.set('uid', item.uid);
     post.set('headline', HaBlog.Utilities.Showdown.makeHtml(item.headline.content));
     post.set('title', HaBlog.Utilities.Showdown.makeHtml(item.title.content));
@@ -181,7 +185,7 @@ HaBlog.Rating = Em.Object.extend({
 // Define the main application controller. This is automatically picked up by
 // the application and initialized.
 HaBlog.ApplicationController = Ember.Controller.extend({
-
+    currentSection: null
 });
 
 // POST LIST CONTROLLER
@@ -218,7 +222,11 @@ HaBlog.PostListController = Ember.ArrayController.extend({
             return this.binarySearch(value, low, mid);
         }
         return mid;
-    }
+    },
+
+    recentPosts: function(){
+        return this.get('content').slice(0,4);
+    }.property('content')
 });
 
 // Define the main application controller. This is automatically picked up by
@@ -266,8 +274,8 @@ HaBlog.Router = Ember.Router.extend({
             route: '/posts',
             showPost: Ember.Route.transitionTo('post'),
             connectOutlets: function(router) {
-                console.log("routing to post list");
                 router.get('applicationController').connectOutlet('postList');
+                router.get('applicationController').set('currentSection', null);
             }
         }),
         post: Ember.Route.extend({
@@ -280,6 +288,7 @@ HaBlog.Router = Ember.Router.extend({
                     router.transitionTo('posts');
                 }else{
                     router.get('applicationController').connectOutlet('post', targetPost);
+                    router.get('applicationController').set('currentSection', targetPost.get('title'));
                 }
             }
         })
