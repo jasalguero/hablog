@@ -1,10 +1,10 @@
 /******************************************************/
 /*				INITS			            		  */
 /******************************************************/
-var HaBlog = Em.Application.create({
+var HB = Em.Application.create({
 });
 
-HaBlog.ready = function(){
+HB.ready = function(){
 
 }
 
@@ -13,112 +13,38 @@ HaBlog.ready = function(){
 /*				CONSTANTS							  */
 /******************************************************/
 
-HaBlog.CONSTANTS = {
+HB.CONSTANTS = {
     PATH_CONTEXT : 'http://tech.piyush.purang.net/ppurang/blog',
     PATH_BLOG_LIST : '/_search',
     PATH_SEARCH : '/_search?q=title.content:*&sort=created.time:desc&pretty',
-    PATH_EDIT: '/edit'
-};
+    PATH_EDIT: '/edit',
 
-HaBlog.Utilities = {
-    Showdown : null
-}
+    PAGINATION:
+    {
+        SIZE: 10
+    },
 
-
-HaBlog.GetItemsFromServer = function () {
-    $.ajax({
-        url:HaBlog.CONSTANTS.PATH_CONTEXT+HaBlog.CONSTANTS.PATH_BLOG_LIST,
-        async:false,
-        dataType:'json',
-        success: function(data) {
-            // Use map to iterate through the items and create a new JSON object for
-            // each item
-
-            //TODO: MAKE SAFE
-            var results = data.hits.hits;
-            results.map(function(item) {
-
-                var post = HaBlog.CreatePostFromJSon(item._source);
-
-                HaBlog.postListController.addPost(post);
-            });
-            console.log("Finished loading");
+    SEARCH:
+    {
+        DEFAULT: "?q=title.content:*&sort=created.time:desc&size=%@1"
     }
-    });
-}
-
-HaBlog.CreatePostFromJSon = function (item){
-
-
-    var post = HaBlog.Post.create();
-    post.set('uid', item.uid);
-    post.set('headline', HaBlog.Utilities.Showdown.makeHtml(item.headline.content));
-    post.set('title', HaBlog.Utilities.Showdown.makeHtml(item.title.content));
-    post.set('author', item.author);
-    post.set('summary', HaBlog.Utilities.Showdown.makeHtml(item.summary.content));
-    post.set('sections', HaBlog.ParseSections(item.content));
-    post.set('tags', item.tags);
-    post.set('comments', HaBlog.ParseComments(item.comments));
-    post.set('created', moment(item.created.time));
-
-    return post;
-}
-
-
-HaBlog.InitializeMarkdownParser = function () {
-    HaBlog.Utilities.Showdown = new Showdown.converter();
 };
 
-HaBlog.ParseSections = function(jsonContent){
-    var sections = [];
+/**
+ * curl -X POST "http://tech.piyush.purang.net/ppurang/blog/_search?pretty=true" -d '
+ {
+   "facets" : {
+     "tags" : { "terms" : {"field" : "tags"} }
+   }
+ }
+ */
 
-    jsonContent.map(function(item){
-        var section = HaBlog.Section.create({
-            text: item.text === undefined ? null : item.text.content === undefined ? null : HaBlog.Utilities.Showdown.makeHtml(item.text.content),
-            headline : item.headline === undefined ? null : item.headline.content === undefined ? null : HaBlog.Utilities.Showdown.makeHtml(item.headline.content)
-
-        });
-        sections.push(section);
-    });
-    return sections;
-}
-
-HaBlog.ParseComments = function (jsonContent){
-    var comments = [];
-    jsonContent.map(function(item){
-        var comment = HaBlog.Comment.create({
-            uid:item.uid,
-            text:item.text,
-            created: item.created.time === undefined ? moment().subtract('years', 100) : moment(item.created.time),
-            rating: HaBlog.Rating.create({
-                likes: item.rating === undefined ? 0 : item.rating.likes === undefined ? 0 : item.rating.likes,
-                dislikes: item.rating === undefined ? 0 : item.rating.dislikes === undefined ? 0 : item.rating.dislikes
-            }),
-            replies: HaBlog.ParseComments(item.replies),
-            totalReplies: function(){
-                var total = 0;
-                var commentReplies = this.get('replies')
-                var repliesLength = commentReplies.length
-                for (var i = 0; i < repliesLength; ++i) {
-                    if (i in commentReplies) {
-                        var reply = commentReplies[i];
-                        total = total + reply.get('totalReplies') + 1;
-                    }
-                }
-                return total;
-            }.property()
-        });
-        comments.push(comment);
-    });
-
-    return comments;
-}
 /******************************************************/
 /*				MODEL								  */
 /******************************************************/
 
 // POST ITEM
-HaBlog.Post = Em.Object.extend({
+HB.Post = Em.Object.extend({
     uid:null,
     title:null,
     headline:null,
@@ -154,13 +80,13 @@ HaBlog.Post = Em.Object.extend({
 });
 
 // SECTION ITEM
-HaBlog.Section = Em.Object.extend({
+HB.Section = Em.Object.extend({
     text:null,
     headline:null
 });
 
 // COMMENT ITEM
-HaBlog.Comment = Em.Object.extend({
+HB.Comment = Em.Object.extend({
     user:null,
     text:null,
     created: moment().subtract('years', 100),
@@ -173,9 +99,13 @@ HaBlog.Comment = Em.Object.extend({
 });
 
 // RATING COMPONENT
-HaBlog.Rating = Em.Object.extend({
+HB.Rating = Em.Object.extend({
     likes:0,
     dislikes:0
+});
+
+HB.Tag = Em.Object.extend({
+    name: null
 })
 
 /******************************************************/
@@ -184,12 +114,12 @@ HaBlog.Rating = Em.Object.extend({
 
 // Define the main application controller. This is automatically picked up by
 // the application and initialized.
-HaBlog.ApplicationController = Ember.Controller.extend({
+HB.ApplicationController = Em.Controller.extend({
     currentSection: null
 });
 
 // POST LIST CONTROLLER
-HaBlog.PostListController = Ember.ArrayController.extend({
+HB.PostListController = Em.ArrayController.extend({
     //container with the list of posts
     content:[],
 
@@ -231,23 +161,28 @@ HaBlog.PostListController = Ember.ArrayController.extend({
 
 // Define the main application controller. This is automatically picked up by
 // the application and initialized.
-HaBlog.PostController = Ember.ObjectController.extend({
+HB.PostController = Em.ObjectController.extend({
 });
+
+/**
+ * 
+ * @type {*}
+ */
 
 /******************************************************/
 /*				VIEWS								  */
 /******************************************************/
 // View for the Post list
-HaBlog.PostListView = Em.View.extend({
+HB.PostListView = Em.View.extend({
     templateName:'postList'
 });
 
 //View for the single Post
-HaBlog.PostView = Em.View.extend({
+HB.PostView = Em.View.extend({
     templateName:'post'
 });
 
-HaBlog.ApplicationView = Ember.View.extend({
+HB.ApplicationView = Em.View.extend({
     templateName: 'application',
     //Theme UI initialization if needed after the application view rendered the basic template
     didInsertElement: function(){
@@ -260,9 +195,9 @@ HaBlog.ApplicationView = Ember.View.extend({
 /*				ROUTER								  */
 /******************************************************/
 
-HaBlog.Router = Ember.Router.extend({
-    root: Ember.Route.extend({
-        index: Ember.Route.extend({
+HB.Router = Em.Router.extend({
+    root: Em.Route.extend({
+        index: Em.Route.extend({
             route: '/',
             redirectsTo: 'posts'
         }),
@@ -270,20 +205,20 @@ HaBlog.Router = Ember.Router.extend({
             console.log("routing to main page");
             router.transitionTo('posts');
         },
-        posts: Ember.Route.extend({
+        posts: Em.Route.extend({
             route: '/posts',
-            showPost: Ember.Route.transitionTo('post'),
+            showPost: Em.Route.transitionTo('post'),
             connectOutlets: function(router) {
                 router.get('applicationController').connectOutlet('postList');
                 router.get('applicationController').set('currentSection', null);
             }
         }),
-        post: Ember.Route.extend({
+        post: Em.Route.extend({
             route: '/posts/:uid',
             connectOutlets: function(router, post) {
                 console.log("redirecting to post")
-                var targetPost = HaBlog.postListController.findProperty('uid', post.uid);
-                if (Ember.none(targetPost)){
+                var targetPost = HB.postListController.findProperty('uid', post.uid);
+                if (Em.none(targetPost)){
                     //go to main page if the post doesn't exist
                     router.transitionTo('posts');
                 }else{
@@ -296,9 +231,116 @@ HaBlog.Router = Ember.Router.extend({
 });
 
 
+/******************************************************/
+/*				DATASOURCE			    			  */
+/******************************************************/
+HB.datasource = Em.Object.create({
+
+    /**
+     *
+     */
+    getItemsFromServer : function () {
+        $.ajax({
+            url:HB.CONSTANTS.PATH_CONTEXT+HB.CONSTANTS.PATH_BLOG_LIST+HB.CONSTANTS.SEARCH.DEFAULT.fmt(HB.CONSTANTS.PAGINATION.SIZE),
+            async:false,
+            dataType:'json',
+            success: function(data) {
+                // Use map to iterate through the items and create a new JSON object for
+                // each item
+
+                //TODO: MAKE SAFE
+                var results = data.hits.hits;
+                results.map(function(item) {
+
+                    var post = HB.CreatePostFromJSon(item._source);
+
+                    HB.postListController.addPost(post);
+                });
+                console.log("Finished loading");
+            }
+        });
+    }
+});
+
+/******************************************************/
+/*				UTILITIES			    			  */
+/******************************************************/
+
+HB.Utilities = {
+    Showdown : null
+}
+
+
+HB.CreatePostFromJSon = function (item){
+
+    var post = HB.Post.create();
+    post.set('uid', item.uid);
+    post.set('headline', HB.Utilities.Showdown.makeHtml(item.headline.content));
+    post.set('title', HB.Utilities.Showdown.makeHtml(item.title.content));
+    post.set('author', item.author);
+    post.set('summary', HB.Utilities.Showdown.makeHtml(item.summary.content));
+    post.set('sections', HB.ParseSections(item.content));
+    post.set('tags', item.tags);
+    post.set('comments', HB.ParseComments(item.comments));
+    post.set('created', moment(item.created.time));
+
+    return post;
+}
+
+
+HB.InitializeMarkdownParser = function () {
+    HB.Utilities.Showdown = new Showdown.converter();
+};
+
+HB.ParseSections = function(jsonContent){
+    var sections = [];
+
+    jsonContent.map(function(item){
+        var section = HB.Section.create({
+            text: item.text === undefined ? null : item.text.content === undefined ? null : HB.Utilities.Showdown.makeHtml(item.text.content),
+            headline : item.headline === undefined ? null : item.headline.content === undefined ? null : HB.Utilities.Showdown.makeHtml(item.headline.content)
+
+        });
+        sections.push(section);
+    });
+    return sections;
+}
+
+HB.ParseComments = function (jsonContent){
+    var comments = [];
+    jsonContent.map(function(item){
+        var comment = HB.Comment.create({
+            uid:item.uid,
+            text:item.text,
+            created: item.created.time === undefined ? moment().subtract('years', 100) : moment(item.created.time),
+            rating: HB.Rating.create({
+                likes: item.rating === undefined ? 0 : item.rating.likes === undefined ? 0 : item.rating.likes,
+                dislikes: item.rating === undefined ? 0 : item.rating.dislikes === undefined ? 0 : item.rating.dislikes
+            }),
+            replies: HB.ParseComments(item.replies),
+            totalReplies: function(){
+                var total = 0;
+                var commentReplies = this.get('replies')
+                var repliesLength = commentReplies.length
+                for (var i = 0; i < repliesLength; ++i) {
+                    if (i in commentReplies) {
+                        var reply = commentReplies[i];
+                        total = total + reply.get('totalReplies') + 1;
+                    }
+                }
+                return total;
+            }.property()
+        });
+        comments.push(comment);
+    });
+
+    return comments;
+}
+
+
 $(function() {
-    HaBlog.InitializeMarkdownParser();
-    HaBlog.postListController = HaBlog.PostListController.create();
-    HaBlog.GetItemsFromServer();
-    HaBlog.initialize();
+    HB.InitializeMarkdownParser();
+    HB.postListController = HB.PostListController.create();
+    HB.GetItemsFromServer();
+    HB.initialize();
 });

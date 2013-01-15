@@ -99,6 +99,6 @@ function addSingleJsonPost(){
             }]
         }]
     }
-    var post = HaBlog.CreatePostFromJSon(item);
-    HaBlog.postListController.addPost(post);
+    var post = HB.CreatePostFromJSon(item);
+    HB.postListController.addPost(post);
 }

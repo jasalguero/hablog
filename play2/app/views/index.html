@@ -66,9 +66,9 @@
         <div class="wrap">
             <div class="container">
                 <a href="index.html">Home</a>
-                {{#if HaBlog.router.applicationController.currentSection}}
+                {{#if HB.router.applicationController.currentSection}}
                      <span>/</span>
-                     <span>{{{HaBlog.router.applicationController.currentSection}}}</span>
+                     <span>{{{HB.router.applicationController.currentSection}}}</span>
                 {{/if}}
                 <!--<span>/</span>-->
             </div>
@@ -115,7 +115,7 @@
                             <div class="widget">
                                 <h2 class="title"><span>recent posts</span></h2>
                                 <ul class="recent_post">
-                                    {{#each post in router.postListController.recentPosts}}
+                                    {{#each post in HB.router.postListController.recentPosts}}
                                         <li>
                                             <div><a href="#" {{action showPost post}}>{{{post.title}}} </a></div>
                                             {{post.created}}
@@ -174,7 +174,7 @@
         <div class="wrap">
             <div class="container">
                 <div class="row">
-                    <div class="span4"><div class="copyright">HaBlog &copy; 2013  |  <a href="#">Privacy Policy</a></div></div>
+                    <div class="span4"><div class="copyright">HB &copy; 2013  |  <a href="#">Privacy Policy</a></div></div>
                     <div class="span8 foot_menu">
                         <ul>
                             <li><a href="index.html" class="first_world_menu current">Home Page</a></li>
@@ -198,7 +198,7 @@
 <!-- POST LIST TEMPLATE -->
 <script type="text/x-handlebars" data-template-name="postList">
 
-    {{#each post in HaBlog.postListController}}
+    {{#each post in HB.postListController}}
     <div class="post">
         <h2 class="title"><span><a href="#" {{action showPost post}}>{{{post.title}}}</a></span></h2>
         <div class="post_info">
