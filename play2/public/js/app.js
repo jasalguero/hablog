@@ -15,7 +15,6 @@ HB.ready = function(){
 
 HB.CONSTANTS = {
     PATH_CONTEXT : 'http://tech.piyush.purang.net/ppurang/blog',
-    PATH_BLOG_LIST : '/_search',
     PATH_SEARCH : '/_search?q=title.content:*&sort=created.time:desc&pretty',
     PATH_EDIT: '/edit',
 
@@ -26,18 +25,16 @@ HB.CONSTANTS = {
 
     SEARCH:
     {
-        DEFAULT: "?q=title.content:*&sort=created.time:desc&size=%@1"
+        DEFAULT: '/_search',
+        POST_LIST: "?q=title.content:*&sort=created.time:desc&size=%@1",
+        TAG_FILTER: {
+            facets : {
+                tags : { terms : {field : 'state'} }
+            }
+        }
+
     }
 };
-
-/**
- * curl -X POST "http://tech.piyush.purang.net/ppurang/blog/_search?pretty=true" -d '
- {
-   "facets" : {
-     "tags" : { "terms" : {"field" : "tags"} }
-   }
- }
- */
 
 /******************************************************/
 /*				MODEL								  */
@@ -105,7 +102,8 @@ HB.Rating = Em.Object.extend({
 });
 
 HB.Tag = Em.Object.extend({
-    name: null
+    name: null,
+    count: 0
 })
 
 /******************************************************/
@@ -164,10 +162,16 @@ HB.PostListController = Em.ArrayController.extend({
 HB.PostController = Em.ObjectController.extend({
 });
 
-/**
- * 
- * @type {*}
- */
+HB.TagController = Em.ArrayController.extend({
+    content: null,
+
+    sortProperties: ['count'],
+
+    init: function(){
+        this._super();
+        HB.datasource.getTagsFromServer();
+    }
+})
 
 /******************************************************/
 /*				VIEWS								  */
@@ -237,12 +241,12 @@ HB.Router = Em.Router.extend({
 HB.datasource = Em.Object.create({
 
     /**
-     *
+     * Load posts from the server
      */
     getItemsFromServer : function () {
         $.ajax({
-            url:HB.CONSTANTS.PATH_CONTEXT+HB.CONSTANTS.PATH_BLOG_LIST+HB.CONSTANTS.SEARCH.DEFAULT.fmt(HB.CONSTANTS.PAGINATION.SIZE),
-            async:false,
+            url:HB.CONSTANTS.PATH_CONTEXT+HB.CONSTANTS.SEARCH.DEFAULT + HB.CONSTANTS.SEARCH.POST_LIST.fmt(HB.CONSTANTS.PAGINATION.SIZE),
+            async:true,
             dataType:'json',
             success: function(data) {
                 // Use map to iterate through the items and create a new JSON object for
@@ -259,8 +263,40 @@ HB.datasource = Em.Object.create({
                 console.log("Finished loading");
             }
         });
+    },
+
+    getTagsFromServer: function(){
+        $.ajax({
+            url:HB.CONSTANTS.PATH_CONTEXT+HB.CONSTANTS.SEARCH.DEFAULT.fmt(HB.CONSTANTS.PAGINATION.SIZE),
+            async:true,
+            data: JSON.stringify(HB.CONSTANTS.SEARCH.TAG_FILTER),
+            type: 'POST',
+            dataType:'json',
+            success: function(data) {
+                console.log(data);
+                if(HB.PropertyExists(data, 'facets.tags.terms')){
+                    var results = data.facets.tags.terms;
+                    var tags = results.map(function(item){
+                        if (HB.PropertyExists(item,'term'))
+                        {
+                            debugger;
+                            var tag = HB.Tag.create();
+                            tag.set('name',item.term);
+                            tag.set('count',item.count);
+                            return tag;
+                        }
+
+                    });
+
+                    HB.get('router.tagController').set('content',tags);
+                }
+
+            }
+        });
     }
+
 });
+
 
 /******************************************************/
 /*				UTILITIES			    			  */
@@ -335,12 +371,32 @@ HB.ParseComments = function (jsonContent){
     });
 
     return comments;
+};
+
+/**
+ * Check if the nested property of an object exists
+ * @param obj
+ * @param prop
+ * @return {boolean}
+ */
+HB.PropertyExists = function test(obj, prop) {
+    var parts = prop.split('.');
+    for(var i = 0, l = parts.length; i < l; i++) {
+        var part = parts[i];
+        if(obj !== null && typeof obj === "object" && part in obj) {
+            obj = obj[part];
+        }
+        else {
+            return false;
+        }
+    }
+    return true;
 }
 
 
 $(function() {
     HB.InitializeMarkdownParser();
     HB.postListController = HB.PostListController.create();
-    HB.GetItemsFromServer();
+    HB.datasource.getItemsFromServer();
     HB.initialize();
 });
