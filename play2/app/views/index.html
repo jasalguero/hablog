@@ -104,7 +104,7 @@
                             <div class="widget tags">
                                 <h2 class="title"><span>tags</span></h2>
                                 {{#each tag in HB.router.tagController}}
-                                    <a href="#" {{action showPostsByTag tag}}>{{tag.name}}</a>
+                                    <a href="#" {{action showPostsByTag tag}}>{{tag.name}} {{tag.count}}</a>
                                 {{/each}}
 
                             </div>
