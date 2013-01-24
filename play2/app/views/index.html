@@ -198,12 +198,12 @@
 
     {{#each post in controller}}
     <div class="post">
-        <h2 class="title"><span><a href="#" {{action showPost post}}>{{{post.title}}}</a></span></h2>
+        <h2 class="title"><span><a href="#" {{action showPost post}}>{{{post.headline}}}</a></span></h2>
         <div class="post_info">
             <div class="fleft">On <span>{{post.creationDay}} {{post.creationMonth}} {{post.creationYear}}</span> / <!--By <a href="#">John Smith</a> / -->
                 Tags
                 {{#each post.tags}}
-                <a href="#">{{tag}}</a>
+                <a href="#" {{action showPostsByTag tag}}>{{tag}}</a>
                 {{/each}}
             </div>
             <div class="fright"><a href="#">{{post.commentsCount}}</a> Comments</div>
@@ -228,7 +228,7 @@
 <!-- FULL POST TEMPLATE -->
 <script type="text/x-handlebars" data-template-name="post">
     <div class="post">
-        <h1>{{{title}}}</h1>
+        <h1>{{{headline}}}</h1>
         <div class="post_info">
             <div class="fleft">On <span>{{creationDay}} {{creationMonth}} {{creationYear}}</span> <!--/ By <a href="#">John Smith</a>-->
                 / Tags

@@ -490,7 +490,7 @@ HB.UrlHelper = Em.Object.create({
     postsByTagUrl: function(tagName){
         var url = HB.CONSTANTS.PATH_CONTEXT+HB.CONSTANTS.SEARCH.PATH;
         url = url.replace(HB.CONSTANTS.SEARCH.PARAMETERS.SEARCH_FIELD, "tags.tag");
-        url = url.replace(HB.CONSTANTS.SEARCH.PARAMETERS.SEARCH_VALUE, tagName);
+        url = url.replace(HB.CONSTANTS.SEARCH.PARAMETERS.SEARCH_VALUE, tagName );
         url = url.replace(HB.CONSTANTS.SEARCH.PARAMETERS.SEARCH_ORDER, "created.time:desc");
         url = this.setPageSize(url);
         return url;
