@@ -104,7 +104,7 @@
                             <div class="widget tags">
                                 <h2 class="title"><span>tags</span></h2>
                                 {{#each tag in HB.router.tagController}}
-                                    <a href="#">{{tag.name}}</a>
+                                    <a href="#" {{action showPostsByTag tag}}>{{tag.name}}</a>
                                 {{/each}}
 
                             </div>
@@ -196,7 +196,7 @@
 <!-- POST LIST TEMPLATE -->
 <script type="text/x-handlebars" data-template-name="postList">
 
-    {{#each post in HB.postListController}}
+    {{#each post in HB.router.postListController}}
     <div class="post">
         <h2 class="title"><span><a href="#" {{action showPost post}}>{{{post.title}}}</a></span></h2>
         <div class="post_info">

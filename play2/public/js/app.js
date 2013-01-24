@@ -177,7 +177,7 @@ HB.TagController = Em.ArrayController.extend({
         this._super();
         HB.datasource.getTagsFromServer();
     }
-})
+});
 
 /******************************************************/
 /*				VIEWS								  */
@@ -215,6 +215,8 @@ HB.Router = Em.Router.extend({
             console.log("routing to main page");
             router.transitionTo('posts');
         },
+        showPostsByTag: Em.Route.transitionTo('tag'),
+
         posts: Em.Route.extend({
             route: '/posts',
             showPost: Em.Route.transitionTo('post'),
@@ -226,8 +228,7 @@ HB.Router = Em.Router.extend({
         post: Em.Route.extend({
             route: '/posts/:uid',
             connectOutlets: function(router, post) {
-                console.log("redirecting to post")
-                var targetPost = HB.postListController.findProperty('uid', post.uid);
+                var targetPost = HB.get('router.postListController').findProperty('uid', post.uid);
                 if (Em.none(targetPost)){
                     //go to main page if the post doesn't exist
                     router.transitionTo('posts');
@@ -236,7 +237,32 @@ HB.Router = Em.Router.extend({
                     router.get('applicationController').set('currentSection', targetPost.get('title'));
                 }
             }
+
         }),
+        tag: Em.Route.extend({
+            route: '/tags/:name',
+//            enter: function(router, tag){
+//                debugger;
+//                router.get('postListController').set('content', []);
+//                HB.datasource.getPostsByTag(tag.get('name'));
+//            },
+            connectOutlets: function(router, tag){
+                debugger;
+                var targetTag = router.get('tagController').findProperty('name',tag.name);
+                if (Em.none(targetTag)){
+                    //go to main page if the tag doesn't exist
+                    router.transitionTo('posts');
+                }else{
+                    router.get('postListController').set('content', []);
+                    HB.datasource.getPostsByTag(targetTag.get('name'));
+
+                    router.get('applicationController').connectOutlet('postList');
+                    router.get('applicationController').set('currentSection', 'tags/' + targetTag.get('name'));
+                }
+
+            }
+
+        })
     })
 });
 
@@ -264,7 +290,7 @@ HB.datasource = Em.Object.create({
 
                     var post = HB.CreatePostFromJSon(item._source);
 
-                    HB.postListController.addPost(post);
+                    HB.get('router.postListController').addPost(post);
                 });
                 console.log("Finished loading");
             }
@@ -281,7 +307,6 @@ HB.datasource = Em.Object.create({
             dataType:'json',
             success: function(data) {
                 console.log(data);
-                debugger;
                 if(HB.PropertyExists(data, 'facets.tags.terms')){
                     var results = data.facets.tags.terms;
                     var tags = results.map(function(item){
@@ -292,12 +317,31 @@ HB.datasource = Em.Object.create({
                             tag.set('count',item.count);
                             return tag;
                         }
+                    });
+                    HB.get('router.tagController').set('content',tags);
 
+                }
+            }
+        });
+    },
+
+    getPostsByTag: function(tagName){
+        $.ajax({
+            url: HB.get('UrlHelper').postsByTagUrl(tagName),
+            async:true,
+            success: function(data){
+                console.log(data);
+
+                var resultPosts = [];
+
+                if (HB.PropertyExists(data, 'hits.hits'))
+                    var results = data.hits.hits;
+                    resultPosts = results.map(function(item) {
+                        return HB.CreatePostFromJSon(item._source);
                     });
 
-                    HB.get('router.tagController').set('content',tags);
-                }
-
+                //return resultPosts;
+                HB.get('router.postListController').set('content',resultPosts);
             }
         });
     }
@@ -311,7 +355,7 @@ HB.datasource = Em.Object.create({
 
 HB.Utilities = {
     Showdown : null
-}
+};
 
 
 HB.CreatePostFromJSon = function (item){
@@ -420,8 +464,13 @@ HB.UrlHelper = Em.Object.create({
 
     },
 
-    getPostsByTagUrl: function(tagName){
-
+    postsByTagUrl: function(tagName){
+        var url = HB.CONSTANTS.PATH_CONTEXT+HB.CONSTANTS.SEARCH.PATH;
+        url = url.replace(HB.CONSTANTS.SEARCH.PARAMETERS.SEARCH_FIELD, "tags.tag");
+        url = url.replace(HB.CONSTANTS.SEARCH.PARAMETERS.SEARCH_VALUE, tagName);
+        url = url.replace(HB.CONSTANTS.SEARCH.PARAMETERS.SEARCH_ORDER, "created.time:desc");
+        url = this.setPageSize(url);
+        return url;
     },
 
     setPageSize: function(url){
@@ -433,7 +482,7 @@ HB.UrlHelper = Em.Object.create({
 
 $(function() {
     HB.InitializeMarkdownParser();
-    HB.postListController = HB.PostListController.create();
+//    HB.postListController = HB.PostListController.create();
     HB.datasource.getPosts();
     HB.initialize();
 });
