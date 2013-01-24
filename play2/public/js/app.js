@@ -15,24 +15,30 @@ HB.ready = function(){
 
 HB.CONSTANTS = {
     PATH_CONTEXT : 'http://tech.piyush.purang.net/ppurang/blog',
-    PATH_SEARCH : '/_search?q=title.content:*&sort=created.time:desc&pretty',
     PATH_EDIT: '/edit',
 
     PAGINATION:
     {
-        SIZE: 10
+        SIZE: 3
     },
 
     SEARCH:
     {
-        DEFAULT: '/_search',
+        PATH: '/_search?q={{_SEARCH_FIELD}}:{{_SEARCH_VALUE}}&{{_ORDER}}&size={{_PAGE_SIZE}}',
+
         POST_LIST: "?q=title.content:*&sort=created.time:desc&size=%@1",
         TAG_FILTER: {
             facets : {
-                tags : { terms : {field : 'state'} }
+                tags : { terms : {field : 'tags.tag'} }
             }
-        }
+        },
 
+        PARAMETERS:{
+            SEARCH_FIELD: "{{_SEARCH_FIELD}}",
+            SEARCH_VALUE: "{{_SEARCH_VALUE}}",
+            SEARCH_ORDER: "{{_ORDER}}",
+            SEARCH_PAGE_SIZE: "{{_PAGE_SIZE}}"
+        }
     }
 };
 
@@ -230,7 +236,7 @@ HB.Router = Em.Router.extend({
                     router.get('applicationController').set('currentSection', targetPost.get('title'));
                 }
             }
-        })
+        }),
     })
 });
 
@@ -243,9 +249,9 @@ HB.datasource = Em.Object.create({
     /**
      * Load posts from the server
      */
-    getItemsFromServer : function () {
+    getPosts : function () {
         $.ajax({
-            url:HB.CONSTANTS.PATH_CONTEXT+HB.CONSTANTS.SEARCH.DEFAULT + HB.CONSTANTS.SEARCH.POST_LIST.fmt(HB.CONSTANTS.PAGINATION.SIZE),
+            url: HB.get('UrlHelper.postsUrl'),
             async:true,
             dataType:'json',
             success: function(data) {
@@ -267,19 +273,20 @@ HB.datasource = Em.Object.create({
 
     getTagsFromServer: function(){
         $.ajax({
-            url:HB.CONSTANTS.PATH_CONTEXT+HB.CONSTANTS.SEARCH.DEFAULT.fmt(HB.CONSTANTS.PAGINATION.SIZE),
+            //url:HB.CONSTANTS.PATH_CONTEXT+HB.CONSTANTS.SEARCH.DEFAULT.fmt(HB.CONSTANTS.PAGINATION.SIZE),
+            url: HB.get('UrlHelper.postsUrl'),
             async:true,
             data: JSON.stringify(HB.CONSTANTS.SEARCH.TAG_FILTER),
             type: 'POST',
             dataType:'json',
             success: function(data) {
                 console.log(data);
+                debugger;
                 if(HB.PropertyExists(data, 'facets.tags.terms')){
                     var results = data.facets.tags.terms;
                     var tags = results.map(function(item){
                         if (HB.PropertyExists(item,'term'))
                         {
-                            debugger;
                             var tag = HB.Tag.create();
                             tag.set('name',item.term);
                             tag.set('count',item.count);
@@ -391,12 +398,42 @@ HB.PropertyExists = function test(obj, prop) {
         }
     }
     return true;
-}
+};
+
+HB.UrlHelper = Em.Object.create({
+
+    postsUrl: function(){
+        var url = HB.CONSTANTS.PATH_CONTEXT+HB.CONSTANTS.SEARCH.PATH;
+        url = url.replace(HB.CONSTANTS.SEARCH.PARAMETERS.SEARCH_FIELD, "title.content");
+        url = url.replace(HB.CONSTANTS.SEARCH.PARAMETERS.SEARCH_VALUE, "*");
+        url = url.replace(HB.CONSTANTS.SEARCH.PARAMETERS.SEARCH_ORDER, "created.time:desc");
+        url = this.setPageSize(url);
+        return url;
+    }.property(),
+
+    getTagsUrl: function(){
+       return this.postsUrl
+    }.property(),
+
+
+    searchPostsUrl: function(search_term){
+
+    },
+
+    getPostsByTagUrl: function(tagName){
+
+    },
+
+    setPageSize: function(url){
+        return url.replace(HB.CONSTANTS.SEARCH.PARAMETERS.SEARCH_PAGE_SIZE, HB.CONSTANTS.PAGINATION.SIZE);
+    }
+
+});
 
 
 $(function() {
     HB.InitializeMarkdownParser();
     HB.postListController = HB.PostListController.create();
-    HB.datasource.getItemsFromServer();
+    HB.datasource.getPosts();
     HB.initialize();
 });
