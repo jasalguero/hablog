@@ -123,9 +123,22 @@ HB.ApplicationController = Em.Controller.extend({
 });
 
 // POST LIST CONTROLLER
-HB.PostListController = Em.ArrayController.extend({
+HB.PostListController = Em.ArrayController.extend(Em.PaginationSupport, {
     //container with the list of posts
-    content:[],
+    content:null,
+
+    fullContent:null,
+
+    rangeWindowSize: null,
+
+    total: 0,
+
+    init: function(){
+        this._super();
+        this.set('content', []);
+        this.set('fullContent', []);
+        this.set('rangeWindowSize',HB.CONSTANTS.PAGINATION.SIZE);
+    },
 
     //add a new post to the list checking that it was not previously there and ordered by creationg date
     addPost:function (post) {
@@ -160,7 +173,16 @@ HB.PostListController = Em.ArrayController.extend({
 
     recentPosts: function(){
         return this.get('content').slice(0,4);
-    }.property('content')
+    }.property('content'),
+
+    didRequestRange: function(rangeStart, rangeStop) {
+        var content = this.get('fullContent').slice(rangeStart, rangeStop);
+        this.replace(0, this.get('length'), content);
+    },
+
+    isLast: function(){
+       return this.get('page') === this.get('totalPages')
+    }.property('page')
 });
 
 // Define the main application controller. This is automatically picked up by
@@ -241,16 +263,11 @@ HB.Router = Em.Router.extend({
         }),
         tag: Em.Route.extend({
             route: '/tags/:name',
-//            enter: function(router, tag){
-//                debugger;
-//                router.get('postListController').set('content', []);
-//                HB.datasource.getPostsByTag(tag.get('name'));
-//            },
             connectOutlets: function(router, tag){
-                debugger;
                 var targetTag = router.get('tagController').findProperty('name',tag.name);
                 if (Em.none(targetTag)){
                     //go to main page if the tag doesn't exist
+                    HB.datasource.getPosts();
                     router.transitionTo('posts');
                 }else{
                     router.get('postListController').set('content', []);
@@ -286,12 +303,18 @@ HB.datasource = Em.Object.create({
 
                 //TODO: MAKE SAFE
                 var results = data.hits.hits;
-                results.map(function(item) {
+                var resultPosts = results.map(function(item) {
 
                     var post = HB.CreatePostFromJSon(item._source);
 
-                    HB.get('router.postListController').addPost(post);
+                    return post;
+                    //HB.get('router.postListController').addPost(post);
                 });
+
+                HB.get('router.postListController').set('fullContent',resultPosts);
+
+                HB.get('router.postListController').set('total',data.hits.total);
+
                 console.log("Finished loading");
             }
         });
@@ -474,7 +497,7 @@ HB.UrlHelper = Em.Object.create({
     },
 
     setPageSize: function(url){
-        return url.replace(HB.CONSTANTS.SEARCH.PARAMETERS.SEARCH_PAGE_SIZE, HB.CONSTANTS.PAGINATION.SIZE);
+        return url.replace(HB.CONSTANTS.SEARCH.PARAMETERS.SEARCH_PAGE_SIZE, HB.CONSTANTS.PAGINATION.SIZE * 3);
     }
 
 });

@@ -196,7 +196,7 @@
 <!-- POST LIST TEMPLATE -->
 <script type="text/x-handlebars" data-template-name="postList">
 
-    {{#each post in HB.router.postListController}}
+    {{#each post in controller}}
     <div class="post">
         <h2 class="title"><span><a href="#" {{action showPost post}}>{{{post.title}}}</a></span></h2>
         <div class="post_info">
@@ -215,11 +215,12 @@
     {{/each}}
     <div class="pagination">
         <ul>
-            <li><a href="#">&larr;</a></li>
-            <li class="active"><a href="#">10</a></li>
-            <li class="disabled"><a href="#">...</a></li>
-            <li><a href="#">20</a></li>
-            <li><a href="#">&rarr;</a></li>
+            <li {{bindAttr class=":clickable controller.hasPrevious::disabled"}}><a {{action previousPage target="controller"}}>&larr;</a></li>
+            <li {{bindAttr class="controller.hasPrevious::not-displayed"}}><a>...</a></li>
+            <li class="active"><a>page {{controller.page}}</a></li>
+            <li {{bindAttr class="controller.hasNext::not-displayed"}} ><a>...</a></li>
+            <li {{bindAttr class=":clickable controller.isLast:not-displayed"}}><a href="#">{{controller.totalPages}}</a></li>
+            <li {{bindAttr class=":clickable controller.hasNext::disabled"}}><a {{action nextPage target="controller"}}>&rarr;</a></li>
         </ul>
     </div>
 </script>
@@ -319,6 +320,7 @@
 <script src="../../public/js/libs/showdown.js"></script>
 <script src="../../public/js/libs/handlebars-1.0.0.beta.6.js"></script>
 <script src="../../public/js/libs/ember-1.0.pre.js"></script>
+<script src="../../public/js/libs/pagination_support.js"></script>
 <script src="../../public/js/app.js"></script>
 <script src="../../public/js/hablog.js"></script>
 <script src="../../public/js/dev-helper.js"></script>
