@@ -202,8 +202,8 @@
         <div class="post_info">
             <div class="fleft">On <span>{{post.creationDay}} {{post.creationMonth}} {{post.creationYear}}</span> / <!--By <a href="#">John Smith</a> / -->
                 Tags
-                {{#each post.tags}}
-                <a href="#" {{action showPostsByTag tag}}>{{tag}}</a>
+                {{#each tag in post.tags}}
+                <a href="#" {{action showPostsByTag tag}}>{{tag.name}}</a>
                 {{/each}}
             </div>
             <div class="fright"><a href="#">{{post.commentsCount}}</a> Comments</div>
@@ -232,8 +232,8 @@
         <div class="post_info">
             <div class="fleft">On <span>{{creationDay}} {{creationMonth}} {{creationYear}}</span> <!--/ By <a href="#">John Smith</a>-->
                 / Tags
-                {{#each tags}}
-                <a href="#">{{tag}}</a>
+                {{#each tag in tags}}
+                <a href="#" {{action showPostsByTag tag}}>{{tag.name}}</a>
                 {{/each}}
             </div>
             <div class="fright"><a href="#">{{commentsCount}}</a> Comments</div>

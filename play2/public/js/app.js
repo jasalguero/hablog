@@ -238,10 +238,10 @@ HB.Router = Em.Router.extend({
             router.transitionTo('posts');
         },
         showPostsByTag: Em.Route.transitionTo('tag'),
+        showPost: Em.Route.transitionTo('post'),
 
         posts: Em.Route.extend({
             route: '/posts',
-            showPost: Em.Route.transitionTo('post'),
             connectOutlets: function(router) {
                 router.get('applicationController').connectOutlet('postList');
                 router.get('applicationController').set('currentSection', null);
@@ -256,7 +256,7 @@ HB.Router = Em.Router.extend({
                     router.transitionTo('posts');
                 }else{
                     router.get('applicationController').connectOutlet('post', targetPost);
-                    router.get('applicationController').set('currentSection', targetPost.get('title'));
+                    router.get('applicationController').set('currentSection', targetPost.get('headline'));
                 }
             }
 
@@ -390,11 +390,23 @@ HB.CreatePostFromJSon = function (item){
     post.set('author', item.author);
     post.set('summary', HB.Utilities.Showdown.makeHtml(item.summary.content));
     post.set('sections', HB.ParseSections(item.content));
-    post.set('tags', item.tags);
+    post.set('tags', HB.ParseTags(item.tags));
     post.set('comments', HB.ParseComments(item.comments));
     post.set('created', moment(item.created.time));
 
     return post;
+};
+
+HB.ParseTags = function(jsonContent){
+     var tags = [];
+     console.log(jsonContent);
+     jsonContent.forEach(function(tag){
+        var newTag = HB.Tag.create();
+        newTag.set('name',tag.tag);
+        tags.push(newTag);
+     });
+
+    return tags;
 }
 
 
