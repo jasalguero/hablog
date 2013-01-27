@@ -352,9 +352,9 @@ HB.datasource = Em.Object.create({
         $.ajax({
             url: HB.get('UrlHelper').postsByTagUrl(tagName),
             async:true,
+            dataType:'json',
             success: function(data){
                 console.log(data);
-
                 var resultPosts = [];
 
                 if (HB.PropertyExists(data, 'hits.hits'))
